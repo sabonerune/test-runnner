@@ -17,8 +17,7 @@ jobs:
     - uses: astral-sh/setup-uv@v5
     - name: Run
       run: |
-        uv python install 3.11
-        uv venv .venv
-        uv pip install -v numpy
+        uv venv -p 3.11 --managed-python .venv
+        uv pip install -vv numpy
       env:
         MACOSX_DEPLOYMENT_TARGET: '11.0'
