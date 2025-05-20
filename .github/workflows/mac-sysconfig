@@ -1,0 +1,26 @@
+name: Python mac sysconfig
+
+on:
+  push:
+jobs:
+  build:
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.2", "3.3", "3.4", "3.5", "3.6", "3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+        arch: [x64, arm64]
+        os: [macos-13, macos-14 ]
+        exclude:
+          - arch: arm64
+            os: macos-13
+
+    steps:
+    - uses: actions/setup-python@v5
+      with:
+        architecture: ${{ matrix.arch }}
+        python-version: ${{ matrix.python-version }}
+    - name: Run
+      run: |
+        python -c "import sysconfig;print(sysconfig.get_platform())"
