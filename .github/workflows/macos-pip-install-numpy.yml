@@ -18,6 +18,6 @@ jobs:
     - name: Run
       run: |
         uv venv -p 3.11 --managed-python .venv
-        uv pip install -vv numpy
+        uv pip install --python-platform macos -vv numpy
       env:
         MACOSX_DEPLOYMENT_TARGET: '11.0'
