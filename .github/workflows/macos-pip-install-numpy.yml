@@ -18,6 +18,6 @@ jobs:
     - name: Run
       run: |
         uv python install 3.11
-        uv add -v numpy
+        uv pip install -v numpy
       env:
         MACOSX_DEPLOYMENT_TARGET: '11.0'
