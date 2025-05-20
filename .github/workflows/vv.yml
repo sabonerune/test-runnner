@@ -20,6 +20,6 @@ jobs:
     - uses: astral-sh/setup-uv@v5
     - name: Run
       run: |
-        uv sync -vv --locked --resolution lowest-direct
+        uv sync -v --resolution lowest-direct
       env:
         MACOSX_DEPLOYMENT_TARGET: '11.0'
