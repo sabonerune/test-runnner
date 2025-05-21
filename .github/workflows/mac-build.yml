@@ -1,0 +1,162 @@
+name: macOS Build
+
+on:
+  push:
+
+env:
+  VOICEVOX_RESOURCE_VERSION: "0.23.0"
+  VOICEVOX_CORE_VERSION: "0.15.7"
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    env:
+      # GNUコマンド
+      sed: ${{ startsWith(matrix.os, 'macos-') && 'gsed' || 'sed' }}
+      split: ${{ startsWith(matrix.os, 'macos-') && 'gsplit' || 'split' }}
+
+    strategy:
+      matrix:
+        python-architecture: [x86_64, aarch64]
+        os: [macos-15]
+        include:
+          - python-architecture: x86_64
+            runnner-arch: X64
+            architecture: "x64"
+            voicevox_core_asset_prefix: voicevox_core-osx-x64-cpu
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.13.1/onnxruntime-osx-x86_64-1.13.1.tgz
+            target: macos-x64
+          - python-architecture: xaarch64
+            runnner-arch: ARM64
+            architecture: "arm64"
+            voicevox_core_asset_prefix: voicevox_core-osx-arm64-cpu
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.13.1/onnxruntime-osx-arm64-1.13.1.tgz
+            target: macos-arm64
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        repository: voicevox/voicevox_engine
+    - name: <Setup> Install dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: brew install gnu-sed coreutils
+    - uses: astral-sh/setup-uv@v5
+    - name: Install deps
+      run: |
+        uv sync -v --fork-strategy fewest --python cpython-3.11.9-macos-${{ matrix.python-architecture }}-none
+      env:
+        MACOSX_DEPLOYMENT_TARGET: '11.0'
+
+    - name: <Setup> Download pyopenjtalk dictionary
+      run: |
+        # try 5 times, sleep 5 seconds before retry
+        for _ in $(seq 5); do
+          EXIT_CODE=0
+          uv run python -c "import pyopenjtalk; pyopenjtalk._lazy_init()" || EXIT_CODE=$?
+
+          if [ "$EXIT_CODE" = "0" ]; then
+            break
+          fi
+
+          sleep 5
+        done
+
+        if [ "$EXIT_CODE" != "0" ]; then
+          exit "$EXIT_CODE"
+        fi
+
+    - name: <Setup> Create download directory
+      run: mkdir -p download/
+
+    - name: <Setup> Download ONNX Runtime (Mac/Linux)
+      run: |
+        curl -L --retry 3 --retry-delay 5 "${{ matrix.onnxruntime_url }}" > download/onnxruntime.tgz
+        mkdir -p download/onnxruntime
+        tar xf "download/onnxruntime.tgz" -C "download/onnxruntime" --strip-components 1
+        rm download/onnxruntime.tgz
+
+    - name: <Setup> Check out RESOURCE repository
+      uses: actions/checkout@v4
+      with:
+        repository: VOICEVOX/voicevox_resource
+        ref: ${{ env.VOICEVOX_RESOURCE_VERSION }}
+        path: download/resource
+
+    - name: <Build> Merge RESOURCE
+      env:
+        DOWNLOAD_RESOURCE_PATH: download/resource
+      run: bash tools/process_voicevox_resource.bash
+
+    - name: <Setup> Download CORE
+      env:
+        VOICEVOX_CORE_ASSET_NAME: ${{ matrix.voicevox_core_asset_prefix }}-${{ env.VOICEVOX_CORE_VERSION }}
+      run: |
+        curl -L --retry 3 --retry-delay 5 \
+          "https://github.com/VOICEVOX/voicevox_core/releases/download/${{ env.VOICEVOX_CORE_VERSION }}/${{ env.VOICEVOX_CORE_ASSET_NAME }}.zip" > download/${{ env.VOICEVOX_CORE_ASSET_NAME }}.zip
+        unzip download/${{ env.VOICEVOX_CORE_ASSET_NAME }}.zip -d download/
+        mkdir -p download/core
+        mv download/${{ env.VOICEVOX_CORE_ASSET_NAME }}/* download/core
+        rm -rf download/${{ env.VOICEVOX_CORE_ASSET_NAME }}
+        rm download/${{ env.VOICEVOX_CORE_ASSET_NAME }}.zip
+
+    # Build
+    - name: <Build> Generate licenses.json
+      run: |
+        OUTPUT_LICENSE_JSON_PATH=resources/engine_manifest_assets/dependency_licenses.json \
+        bash tools/create_venv_and_generate_licenses.bash
+        # FIXME: VOICEVOX (editor) cannot build without licenses.json
+        cp resources/engine_manifest_assets/dependency_licenses.json licenses.json
+
+    - name: <Build> Generate filemap.json
+      run: uv run tools/generate_filemap.py --target_dir resources/character_info
+
+    - name: <Build> Build VOICEVOX ENGINE run.py
+      run: |
+        set -eux
+
+        jq '
+          .version = "latest" |
+          if ${{ runner.os == 'Windows' }} then .command += ".exe" else . end
+        ' engine_manifest.json > engine_manifest.json.tmp
+
+        mv -f engine_manifest.json.tmp engine_manifest.json
+
+        LIBCORE_PATH=download/core/libvoicevox_core.dylib
+        LIBONNXRUNTIME_PATH=download/onnxruntime/lib/libonnxruntime.dylib
+
+        CORE_MODEL_DIR_PATH="download/core/model" \
+        LIBCORE_PATH="$LIBCORE_PATH" \
+        LIBONNXRUNTIME_PATH="$LIBONNXRUNTIME_PATH" \
+        uv run pyinstaller --noconfirm run.spec
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.runnner-arch }}
+        path: dist/run
+  
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+          os: [macos-13, macos-14]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: voicevox/voicevox_engine
+      - uses: astral-sh/setup-uv@v5
+      - name: install deps
+        run: |
+          uv sync
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ runner.arch }}
+          path: ./dist/run
+      - name: check files
+        run: |
+          ls dist/run
+      - name: <Setup> Set up permission
+        run: chmod +x dist/run/run
+
+      - name: <Test> Test ENGINE package
+        run: uv run tools/check_release_build.py --dist_dir dist/run
