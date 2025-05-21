@@ -34,6 +34,9 @@ jobs:
             target: macos-arm64
 
     steps:
+    - uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '16.3'
     - uses: actions/checkout@v4
       with:
         repository: voicevox/voicevox_engine
@@ -44,8 +47,6 @@ jobs:
     - name: Install deps
       run: |
         uv sync -vv --python cpython-3.11.9-macos-${{ matrix.python-architecture }}-none --group build
-      env:
-        MACOSX_DEPLOYMENT_TARGET: '11.0'
 
     - name: <Setup> Download pyopenjtalk dictionary
       run: |
