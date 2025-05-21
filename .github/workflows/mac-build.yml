@@ -43,7 +43,7 @@ jobs:
     - uses: astral-sh/setup-uv@v5
     - name: Install deps
       run: |
-        uv sync -v --fork-strategy fewest --python cpython-3.11.9-macos-${{ matrix.python-architecture }}-none
+        uv sync -v --fork-strategy fewest --python cpython-3.11.9-macos-${{ matrix.python-architecture }}-none --group build
       env:
         MACOSX_DEPLOYMENT_TARGET: '11.0'
 
