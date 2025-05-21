@@ -26,7 +26,7 @@ jobs:
             voicevox_core_asset_prefix: voicevox_core-osx-x64-cpu
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.13.1/onnxruntime-osx-x86_64-1.13.1.tgz
             target: macos-x64
-          - python-architecture: xaarch64
+          - python-architecture: aarch64
             runnner-arch: ARM64
             architecture: "arm64"
             voicevox_core_asset_prefix: voicevox_core-osx-arm64-cpu
