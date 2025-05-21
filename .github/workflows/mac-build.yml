@@ -45,7 +45,7 @@ jobs:
       run: |
         uv sync -v --fork-strategy fewest --python cpython-3.11.9-macos-${{ matrix.python-architecture }}-none --group build
       env:
-        MACOSX_DEPLOYMENT_TARGET: '15.0'
+        MACOSX_DEPLOYMENT_TARGET: '14.0'
 
     - name: <Setup> Download pyopenjtalk dictionary
       run: |
