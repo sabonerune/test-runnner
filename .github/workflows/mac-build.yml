@@ -9,17 +9,16 @@ env:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
+    runs-on: macos-15
 
     env:
       # GNUコマンド
-      sed: ${{ startsWith(matrix.os, 'macos-') && 'gsed' || 'sed' }}
-      split: ${{ startsWith(matrix.os, 'macos-') && 'gsplit' || 'split' }}
+      sed: 'gsed'
+      split: 'gsplit'
 
     strategy:
       matrix:
         python-architecture: [x86_64, aarch64]
-        os: [macos-15]
         include:
           - python-architecture: x86_64
             runnner-arch: X64
@@ -136,8 +135,8 @@ jobs:
         path: dist/run
   
   test:
-    runs-on: ${{ matrix.os }}
     needs: build
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
           os: [macos-13, macos-14]
