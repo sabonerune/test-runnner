@@ -137,6 +137,7 @@ jobs:
   
   test:
     runs-on: ${{ matrix.os }}
+    needs: build
     strategy:
       matrix:
           os: [macos-13, macos-14]
