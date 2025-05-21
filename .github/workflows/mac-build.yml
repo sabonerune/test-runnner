@@ -21,13 +21,13 @@ jobs:
         python-architecture: [x86_64, aarch64]
         include:
           - python-architecture: x86_64
-            runnner-arch: X64
+            runner-arch: X64
             architecture: "x64"
             voicevox_core_asset_prefix: voicevox_core-osx-x64-cpu
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.13.1/onnxruntime-osx-x86_64-1.13.1.tgz
             target: macos-x64
           - python-architecture: aarch64
-            runnner-arch: ARM64
+            runner-arch: ARM64
             architecture: "arm64"
             voicevox_core_asset_prefix: voicevox_core-osx-arm64-cpu
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.13.1/onnxruntime-osx-arm64-1.13.1.tgz
@@ -43,7 +43,7 @@ jobs:
     - uses: astral-sh/setup-uv@v5
     - name: Install deps
       run: |
-        uv sync -v --python cpython-3.11.9-macos-${{ matrix.python-architecture }}-none --group build
+        uv sync -vv --python cpython-3.11.9-macos-${{ matrix.python-architecture }}-none --group build
       env:
         MACOSX_DEPLOYMENT_TARGET: '11.0'
 
@@ -131,7 +131,7 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: ${{ matrix.runnner-arch }}
+        name: ${{ matrix.runner-arch }}
         path: dist/run
   
   test:
@@ -139,7 +139,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-          os: [macos-13, macos-14]
+        os: [macos-13, macos-14]
     steps:
       - uses: actions/checkout@v4
         with:
