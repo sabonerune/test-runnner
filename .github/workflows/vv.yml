@@ -20,6 +20,6 @@ jobs:
     - uses: astral-sh/setup-uv@v5
     - name: Run
       run: |
-        uv sync -v --fork-strategy fewest --python cpython-3.11.9-macos-aarch64-none
+        uv sync -v --fork-strategy fewest --python cpython-3.11-macos-aarch64-none
       env:
         MACOSX_DEPLOYMENT_TARGET: '11.0'
